@@ -1,0 +1,121 @@
+C51 COMPILER V9.54   DHT11_1                                                               05/12/2018 17:59:15 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE DHT11_1
+OBJECT MODULE PLACED IN .\Objects\DHT11_1.obj
+COMPILER INVOKED BY: D:\KEIL_STM32\C51\BIN\C51.EXE DHT11_1.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\L
+                    -istings\DHT11_1.lst) TABS(2) OBJECT(.\Objects\DHT11_1.obj)
+
+line level    source
+
+   1          //系统名：基于51单片机的DHT11温湿度系统
+   2          #include "DHT11_1.h"
+   3          
+   4          sbit io=P1^0;         //DHT11数据端接单片机的P1^0口
+   5          uchar data_byte; 
+   6          uchar RH,RL,TH,TL;    //TH保存温度，RH保存湿度
+   7          extern bit DHT_flag;
+   8          //*******************************延时函数******************************************* 
+   9          void Delay10us()      //@24.000MHz
+  10          {
+  11   1        unsigned char i;
+  12   1      
+  13   1        i = 78;
+  14   1        while (--i);
+  15   1      }
+  16          //***************************延时函数*****************************************
+  17          void Delay25ms()    //@24.000MHz
+  18          {
+  19   1        unsigned char i, j, k;
+  20   1      
+  21   1        _nop_();
+  22   1        _nop_();
+  23   1        i = 4;
+  24   1        j = 12;
+  25   1        k = 50;
+  26   1        do
+  27   1        {
+  28   2          do
+  29   2          {
+  30   3            while (--k);
+  31   3          } while (--j);
+  32   2        } while (--i);
+  33   1      }
+  34          //*****************************开始信号********************************************
+  35          void start()
+  36          { 
+  37   1        io=1; 
+  38   1        Delay10us(); 
+  39   1        io=0; 
+  40   1        Delay25ms();// 主机把总线拉低必须大于18ms保证DHT11能检测到起始信号 
+  41   1        io=1;       //发送开始信号结束后拉高电平延时20-40us 
+  42   1        Delay10us();//以下三个延时函数差不多为30us符合要求 
+  43   1        Delay10us(); 
+  44   1        Delay10us(); 
+  45   1      } 
+  46          //*****************************接收一个字节******************************************
+  47          uchar receive_byte()
+  48          { 
+  49   1        uchar i,temp; 
+  50   1        for(i=0;i<8;i++)//接收8bit的数据 
+  51   1        { 
+  52   2          while(!io && DHT_flag);   //等待50us的低电平开始信号结束  
+  53   2          Delay10us();  //开始信号结束之后延时26us-28us以下三个延时函数 
+  54   2          Delay10us(); 
+C51 COMPILER V9.54   DHT11_1                                                               05/12/2018 17:59:15 PAGE 2   
+
+  55   2          Delay10us(); 
+  56   2          temp=0;       //时间为26us-28us表示接收的为数据'0' 
+  57   2          if(io==1) 
+  58   2          temp=1;       //如果26us-28us之后还为高电平则表示接收的数据为'1' 
+  59   2          while(io && DHT_flag);    //等待数据信号高电平'0'为26us-28us'1'为70us 
+  60   2          data_byte<<=1;//接收的数据为高位在前右移 
+  61   2          data_byte|=temp;
+  62   2        } 
+  63   1        return data_byte; 
+  64   1      }
+  65          //*****************************接收数据***********************************************
+  66          void receive()
+  67          { 
+  68   1        uchar T_H,T_L,R_H,R_L,check,num_check,i; 
+  69   1        start();//开始信号// 
+  70   1        io=1;   //主机设为输入判断从机DHT11响应信号 
+  71   1        if(!io) //判断从机是否有低电平响应信号
+  72   1        {  
+  73   2          while(!io && DHT_flag); //判断从机发出 80us 的低电平响应信号是否结束// 
+  74   2          while(io && DHT_flag);  //判断从机发出 80us 的高电平是否结束如结束则主机进入数据接收状态 
+  75   2          R_H=receive_byte();//湿度高位 
+  76   2          R_L=receive_byte();//湿度低位 
+  77   2          T_H=receive_byte();//温度高位 
+  78   2          T_L=receive_byte();//温度低位 
+  79   2          check=receive_byte();//校验位 
+  80   2          io=0; //当最后一bit数据接完毕后从机拉低电平50us// 
+  81   2          for(i=0;i<5;i++)//差不多50us的延时 
+  82   2          Delay10us(); 
+  83   2          io=1;//总线由上拉电阻拉高进入空闲状态 
+  84   2          num_check=R_H+R_L+T_H+T_L; 
+  85   2          if(num_check==check)//判断读到的四个数据之和是否与校验位相同 
+  86   2          { 
+  87   3            RH=R_H; 
+  88   3            RL=R_L; 
+  89   3            TH=T_H; 
+  90   3            TL=T_L; 
+  91   3            check=num_check;
+  92   3          } 
+  93   2        } 
+  94   1      }
+  95          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    174    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      5    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,6 @@
+".\Objects\SLAVE.obj",
+".\Objects\AD.obj",
+".\Objects\CRC.obj",
+".\Objects\DS18B20.obj" 
+TO ".\Objects\CONGJI" 
+PRINT(".\Listings\CONGJI.m51") RAMSIZE(256) 

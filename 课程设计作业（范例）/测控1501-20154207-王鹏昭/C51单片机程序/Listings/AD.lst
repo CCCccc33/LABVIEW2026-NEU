@@ -1,0 +1,105 @@
+C51 COMPILER V9.54   AD                                                                    04/17/2018 18:57:07 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE AD
+OBJECT MODULE PLACED IN .\Objects\AD.obj
+COMPILER INVOKED BY: D:\KEIL_STM32\C51\BIN\C51.EXE AD.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listin
+                    -gs\AD.lst) TABS(2) OBJECT(.\Objects\AD.obj)
+
+line level    source
+
+   1          #include <reg51.h>
+   2          #include <stdio.h>
+   3          #include <math.h>
+   4          #include "AD.h"           //adc参考电压为5V，8位分辨率
+   5          //****************************************************
+   6          #define   A   200
+   7          union DATA temp1;
+   8          union DATA temp2;
+   9          union DATA temp3;
+  10          union DATA temp4;
+  11          extern unsigned char xdata Temp_data[32];
+  12          //****************************************************
+  13          void delay(uchar x)
+  14          {
+  15   1        uchar i;
+  16   1        for(i=0;i<x;i++)
+  17   1        {};
+  18   1      }
+  19          //***************************************************
+  20          void adcck(void)     //时钟函数
+  21          {
+  22   1          adcclk=1;delay(2);
+  23   1          adcclk=0;delay(2);
+  24   1      }
+  25          //****************************************************
+  26          uchar readadc(uchar a,uchar b,uchar c)      //读出TLC0831转换数据函数
+  27          {                                           //abc = 000 001 010 011 分别对应四路AD输入
+  28   1          uchar i;
+  29   1          uchar ch;
+  30   1          adcselect_a = a;
+  31   1          adcselect_b = b;
+  32   1          adcselect_c = c;
+  33   1          adccs=0;adcck();ch=0;
+  34   1          for(;adcdo==1;)adcck();
+  35   1          for(i=0;i<8;i++)
+  36   1        {
+  37   2          adcck();
+  38   2          ch=(ch<<1)|adcdo;
+  39   2        }
+  40   1          adccs=1;
+  41   1          return(ch);      //返回值，即转换后的数据
+  42   1      }
+  43          
+  44          //******************读取温度并转换*******************************
+  45          void Get_temp(int a)                    //adc参考电压为5V，8位分辨率
+  46          {                                   
+  47   1          unsigned char i;
+  48   1          float V_cold,cold_temp;
+  49   1          cold_temp = a;
+  50   1          cold_temp = cold_temp*0.0625;
+  51   1          V_cold = -sqrt(cold_temp/(-0.0347)+129446)+359;//根据冷端温度计算需要补偿的电压值
+  52   1          //计算补偿后的热电偶电压值
+  53   1          temp1.tp = (float)adc_read1/256*5*1000/A+V_cold;
+  54   1          temp2.tp = (float)adc_read2/256*5*1000/A+V_cold;
+C51 COMPILER V9.54   AD                                                                    04/17/2018 18:57:07 PAGE 2   
+
+  55   1          temp3.tp = (float)adc_read3/256*5*1000/A+V_cold;
+  56   1          temp4.tp = (float)adc_read4/256*5*1000/A+V_cold;
+  57   1          //K热电偶线性化转换
+  58   1          temp1.tp = (-7.76 + 249.952 * temp1.tp - 0.347332 * temp1.tp * temp1.tp)/10;
+  59   1          temp2.tp = (-7.76 + 249.952 * temp2.tp - 0.347332 * temp2.tp * temp2.tp)/10;
+  60   1          temp3.tp = (-7.76 + 249.952 * temp3.tp - 0.347332 * temp3.tp * temp3.tp)/10;
+  61   1          temp4.tp = (-7.76 + 249.952 * temp4.tp - 0.347332 * temp4.tp * temp4.tp)/10;
+  62   1          //将4个浮点型温度值存储到温度数组
+  63   1          for(i=0;i<4;i++)
+  64   1          {
+  65   2            Temp_data[6+i] = temp1.a[i];
+  66   2          }
+  67   1            for(i=0;i<4;i++)
+  68   1          {
+  69   2            Temp_data[10+i] = temp2.a[i];
+  70   2          }
+  71   1            for(i=0;i<4;i++)
+  72   1          {
+  73   2            Temp_data[14+i] = temp3.a[i];
+  74   2          }
+  75   1            for(i=0;i<4;i++)
+  76   1          {
+  77   2            Temp_data[18+i] = temp4.a[i];
+  78   2          }
+  79   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    885    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     16       8
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

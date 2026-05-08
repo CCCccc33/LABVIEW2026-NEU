@@ -1,0 +1,8 @@
+".\Objects\SLAVE.obj",
+".\Objects\CRC.obj",
+".\Objects\DS18B20.obj",
+".\Objects\DHT11_1.obj",
+".\Objects\DHT11_2.obj",
+".\Objects\BH1750.obj" 
+TO ".\Objects\SLAVE" 
+PRINT(".\Listings\SLAVE.m51") RAMSIZE(256) 

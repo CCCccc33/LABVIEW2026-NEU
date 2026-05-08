@@ -1,0 +1,266 @@
+C51 COMPILER V9.54   CONGJI                                                                04/10/2018 21:25:17 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE CONGJI
+OBJECT MODULE PLACED IN .\Objects\CONGJI.obj
+COMPILER INVOKED BY: D:\KEIL_STM32\C51\BIN\C51.EXE CONGJI.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings
+                    -\CONGJI.lst) TABS(2) OBJECT(.\Objects\CONGJI.obj)
+
+line level    source
+
+   1          //***************************************************************
+   2          #include<REG51.H>             //Í¨Ñ¶²¨ÌØÂÊ115200
+   3          //***************************************************************
+   4          sfr     T2L         =   0xd7;
+   5          sfr     T2H         =   0xd6;
+   6          sfr     AUXR        =   0x8e;
+   7          //***************************************************************
+   8          unsigned char xdata receBuf[32]={0};
+   9          unsigned char xdata sendBuf[16]={0};  
+  10          unsigned char localAddr = 2;  //µ¥Æ¬»ú¿ØÖÆ°åµÄµØÖ·
+  11          unsigned char sendCount;      //·¢ËÍ×Ö½Ú¸öÊý
+  12          unsigned char receCount;      //½ÓÊÕµ½µÄ×Ö½Ú¸öÊý
+  13          unsigned char sendPosi;       //·¢ËÍÎ»ÖÃ
+  14          unsigned int watchdog = 0;    //Èí¼þ¿´ÃÅ¹·³õÊ¼»¯£¬·ÀËÀ»ú
+  15          bit direction_485;            //1->·¢ËÍ£»0->½ÓÊÕ
+  16          //***************************************************************
+  17          unsigned int xdata Data_tab[20];
+  18          //***************************************************************
+  19          /* CRC ¸ßÎ»×Ö½ÚÖµ±í */ 
+  20          const unsigned char code auchCRCHi[] = { 
+  21          0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 
+  22          0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 
+  23          0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 
+  24          0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 
+  25          0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 
+  26          0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 
+  27          0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 
+  28          0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 
+  29          0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 
+  30          0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 
+  31          0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 
+  32          0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 
+  33          0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 
+  34          0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 
+  35          0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 
+  36          0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 
+  37          0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 
+  38          0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 
+  39          0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 
+  40          0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 
+  41          0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 
+  42          0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 
+  43          0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 
+  44          0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 
+  45          0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 
+  46          0x80, 0x41, 0x00, 0xC1, 0x81, 0x40 
+  47          } ; 
+  48          /* CRCµÍÎ»×Ö½ÚÖµ±í*/ 
+  49          const unsigned char code auchCRCLo[] ={ 
+  50          0x00, 0xC0, 0xC1, 0x01, 0xC3, 0x03, 0x02, 0xC2, 0xC6, 0x06, 
+  51          0x07, 0xC7, 0x05, 0xC5, 0xC4, 0x04, 0xCC, 0x0C, 0x0D, 0xCD, 
+  52          0x0F, 0xCF, 0xCE, 0x0E, 0x0A, 0xCA, 0xCB, 0x0B, 0xC9, 0x09, 
+  53          0x08, 0xC8, 0xD8, 0x18, 0x19, 0xD9, 0x1B, 0xDB, 0xDA, 0x1A, 
+  54          0x1E, 0xDE, 0xDF, 0x1F, 0xDD, 0x1D, 0x1C, 0xDC, 0x14, 0xD4, 
+C51 COMPILER V9.54   CONGJI                                                                04/10/2018 21:25:17 PAGE 2   
+
+  55          0xD5, 0x15, 0xD7, 0x17, 0x16, 0xD6, 0xD2, 0x12, 0x13, 0xD3, 
+  56          0x11, 0xD1, 0xD0, 0x10, 0xF0, 0x30, 0x31, 0xF1, 0x33, 0xF3, 
+  57          0xF2, 0x32, 0x36, 0xF6, 0xF7, 0x37, 0xF5, 0x35, 0x34, 0xF4, 
+  58          0x3C, 0xFC, 0xFD, 0x3D, 0xFF, 0x3F, 0x3E, 0xFE, 0xFA, 0x3A, 
+  59          0x3B, 0xFB, 0x39, 0xF9, 0xF8, 0x38, 0x28, 0xE8, 0xE9, 0x29, 
+  60          0xEB, 0x2B, 0x2A, 0xEA, 0xEE, 0x2E, 0x2F, 0xEF, 0x2D, 0xED, 
+  61          0xEC, 0x2C, 0xE4, 0x24, 0x25, 0xE5, 0x27, 0xE7, 0xE6, 0x26, 
+  62          0x22, 0xE2, 0xE3, 0x23, 0xE1, 0x21, 0x20, 0xE0, 0xA0, 0x60, 
+  63          0x61, 0xA1, 0x63, 0xA3, 0xA2, 0x62, 0x66, 0xA6, 0xA7, 0x67, 
+  64          0xA5, 0x65, 0x64, 0xA4, 0x6C, 0xAC, 0xAD, 0x6D, 0xAF, 0x6F, 
+  65          0x6E, 0xAE, 0xAA, 0x6A, 0x6B, 0xAB, 0x69, 0xA9, 0xA8, 0x68, 
+  66          0x78, 0xB8, 0xB9, 0x79, 0xBB, 0x7B, 0x7A, 0xBA, 0xBE, 0x7E, 
+  67          0x7F, 0xBF, 0x7D, 0xBD, 0xBC, 0x7C, 0xB4, 0x74, 0x75, 0xB5, 
+  68          0x77, 0xB7, 0xB6, 0x76, 0x72, 0xB2, 0xB3, 0x73, 0xB1, 0x71, 
+  69          0x70, 0xB0, 0x50, 0x90, 0x91, 0x51, 0x93, 0x53, 0x52, 0x92, 
+  70          0x96, 0x56, 0x57, 0x97, 0x55, 0x95, 0x94, 0x54, 0x9C, 0x5C, 
+  71          0x5D, 0x9D, 0x5F, 0x9F, 0x9E, 0x5E, 0x5A, 0x9A, 0x9B, 0x5B, 
+  72          0x99, 0x59, 0x58, 0x98, 0x88, 0x48, 0x49, 0x89, 0x4B, 0x8B, 
+  73          0x8A, 0x4A, 0x4E, 0x8E, 0x8F, 0x4F, 0x8D, 0x4D, 0x4C, 0x8C, 
+  74          0x44, 0x84, 0x85, 0x45, 0x87, 0x47, 0x46, 0x86, 0x82, 0x42, 
+  75          0x43, 0x83, 0x41, 0x81, 0x80, 0x40 
+  76          } ;
+  77          //***************´®¿Ú1³õÊ¼»¯*****************************************
+  78          void UART1INT(void)
+  79          {
+  80   1          SCON = 0x50;    //Ë«»úÍ¨Ñ¶£¬ÔÊÐí½ÓÊÕ
+  81   1          T2L = 0xCC;     //65536-24000000/115200/4=0FFCCH
+  82   1          T2H = 0xFF;     //Ê¹ÓÃ¶¨Ê±Æ÷2²úÉú²¨ÌØÂÊ
+  83   1          AUXR = 0x15;    //Æô¶¯¶¨Ê±Æ÷2
+  84   1          ES = 1;         //Ê¹ÄÜ´®¿ÚÖÐ¶Ï
+  85   1      }
+  86          //***************¶¨Ê±Æ÷0³õÊ¼»¯*****************************************
+  87          void TIM0INT(void)    
+  88          {                   //335Î¢Ãë@24.000MHz 11/115200*3.5=335us
+  89   1          AUXR |= 0x80;   //¶¨Ê±Æ÷Ê±ÖÓ1TÄ£Ê½
+  90   1          TMOD &= 0xF0;   //ÉèÖÃ¶¨Ê±Æ÷Ä£Ê½
+  91   1          TL0 = 0x98;     //ÉèÖÃ¶¨Ê±³õÖµ
+  92   1          TH0 = 0xE0;     //ÉèÖÃ¶¨Ê±³õÖµ
+  93   1          TF0 = 0;        //Çå³ýTF0±êÖ¾
+  94   1          ET0 = 1;        //Ê¹ÄÜ¶¨Ê±Æ÷0ÖÐ¶Ï
+  95   1      }
+  96          //****************CRCÐ£Ñé********************************************
+  97          unsigned int crc16(unsigned char *puckMsg,unsigned int usDataLen)
+  98          {
+  99   1        unsigned char uchCRCHi = 0xFF ;   //¸ßCRC×Ö½Ú³õÊ¼»¯
+ 100   1        unsigned char uchCRCLo = 0xFF ;   //µÍCRC ×Ö½Ú³õÊ¼»¯ 
+ 101   1        unsigned long  uIndex ;           //CRCÑ­»·ÖÐµÄË÷Òý
+ 102   1        while (usDataLen--)               //Ñ­»·Êý¾Ý³¤¶ÈµÄ¼ÆËã
+ 103   1        { 
+ 104   2          uIndex = uchCRCHi ^ *puckMsg++ ; //¼ÆËãCRC 
+ 105   2          uchCRCHi = uchCRCLo ^ auchCRCHi[uIndex] ; 
+ 106   2          uchCRCLo = auchCRCLo[uIndex] ; 
+ 107   2        } 
+ 108   1        return (uchCRCHi << 8 | uchCRCLo) ; 
+ 109   1      }
+ 110          //*****************·¢ËÍº¯Êý*****************************************
+ 111          void beginSend(void)
+ 112          {
+ 113   1        direction_485=1;  //Éè485Îª·¢ËÍ
+ 114   1        sendPosi=0;       //Éè¶¨³õÊ¼·¢ËÍÎ»ÖÃ
+ 115   1        SBUF=sendBuf[0];  //½øÈë´®¿ÚÖÐ¶Ï¼ÌÐø·¢ËÍ½ÓÏÂÀ´µÄ×Ö½Ú
+ 116   1      }
+C51 COMPILER V9.54   CONGJI                                                                04/10/2018 21:25:17 PAGE 3   
+
+ 117          //*****************»ñÈ¡¼Ä´æÆ÷Öµ*************************************
+ 118          unsigned int get_Reg(unsigned int m)
+ 119          {
+ 120   1         unsigned int tempAddr;
+ 121   1         unsigned int result;
+ 122   1         tempAddr =(m& 0xfff);
+ 123   1         tempAddr=(tempAddr&0xff);
+ 124   1         result=Data_tab[tempAddr];
+ 125   1         return result;
+ 126   1      }
+ 127          //******************¶ÁÊäÈë¼Ä´æÆ÷04ºÅÃüÁî****************************
+ 128          /*Ö÷»ú·¢ËÍ¸ñÊ½£¨0x04£©
+ 129          £ÛÉè±¸µØÖ·£Ý£Û0x04£Ý£Û¼Ä´æÆ÷ÆðÊ¼¸ßµØÖ·£Ý£Û¼Ä´æÆ÷ÆðÊ¼µÍµØÖ·£Ý£Û¶Á¼Ä´æÆ÷ÊýÁ¿¸ß£Ý£Û¶Á¼Ä´æÆ÷ÊýÁ¿µÍ£Ý £ÛCRC¸ß8£
+             -Ý£ÛCRCµÍ8£Ý
+ 130          ´Ó»ú»Ø¸´¸ñÊ½£¨0x04£©
+ 131          £ÛÉè±¸µØÖ·£Ý£Û0x04£Ý£Û·µ»Ø×Ö½Ú¸öÊý£Ý£ÛÊý¾Ý1¸ß8£Ý£ÛÊý¾Ý1µÍ8£Ý£ÛÊý¾Ý2¸ß8£Ý£ÛÊý¾Ý2µÍ8£Ý¡«¡«£ÛÊý¾Ýn£Ý£ÛCRC¸ß8£
+             -Ý£ÛCRCµÍ8£Ý*/
+ 132          //******************************************************************
+ 133          void read_Registers(void)
+ 134          {
+ 135   1        unsigned char addr,tempAddr,readCount,byteCount;
+ 136   1        unsigned int crcData,i,tempData;
+ 137   1        addr=receBuf[2]*256+receBuf[3];
+ 138   1        tempAddr=addr*2;
+ 139   1        readCount=receBuf[4]*256+receBuf[5];
+ 140   1        byteCount=readCount*2;
+ 141   1        for(i=0;i<byteCount;i++)
+ 142   1        {
+ 143   2          tempAddr=tempAddr+i;
+ 144   2          tempData=get_Reg(tempAddr);
+ 145   2          sendBuf[3+i]=tempData;
+ 146   2        }
+ 147   1        sendBuf[0]=localAddr;
+ 148   1        sendBuf[1]=0x04;
+ 149   1        sendBuf[2]=byteCount;
+ 150   1        byteCount=byteCount+3;
+ 151   1        crcData=crc16(sendBuf,byteCount);
+ 152   1        sendBuf[byteCount]=(crcData>>8);
+ 153   1        byteCount++;
+ 154   1        sendBuf[byteCount]=crcData&0xff;
+ 155   1        sendCount=byteCount+1;
+ 156   1        direction_485 = 1;  //·¢ËÍ·½Ïò
+ 157   1        beginSend();
+ 158   1      }
+ 159          
+ 160          //******************´®¿Ú1ÖÐ¶Ïº¯Êý*********************************
+ 161          void UART1_Isr(void) interrupt 4
+ 162          {
+ 163   1        ET0=0;
+ 164   1        if(TI)//ÅÐ¶ÏÊÇ·ñÎª·¢ËÍ
+ 165   1        {
+ 166   2          TI = 0;
+ 167   2          if(sendPosi<sendCount-1)//Èç¹û·¢ËÍÎ»ÖÃÐ¡ÓÚ·¢ËÍ×Ö½Ú
+ 168   2          {
+ 169   3            sendPosi++;
+ 170   3            SBUF=sendBuf[sendPosi];
+ 171   3          }
+ 172   2          else
+ 173   2          {
+ 174   3            sendPosi = 0;
+ 175   3            direction_485=0;    //±íÊ¾485ÒÑ¾­Íê³É·¢ËÍ,ÖÃ485Îª½ÓÊÕ×´Ì¬¡£
+ 176   3            receCount=0;        //°Ñ½ÓÊÕµ½µÄ×Ö½Ú¸öÊýÇå0
+C51 COMPILER V9.54   CONGJI                                                                04/10/2018 21:25:17 PAGE 4   
+
+ 177   3          } 
+ 178   2        }
+ 179   1        else if(RI)//ÅÐ¶ÏÊÇ·ñÓÐ½ÓÊÕÊý¾Ý¡£
+ 180   1        {
+ 181   2          RI = 0;
+ 182   2          TR0=0;  
+ 183   2          TL0=0x98;
+ 184   2          TH0=0xE0;   
+ 185   2          receBuf[receCount++]=SBUF;
+ 186   2          TR0=1;
+ 187   2        } 
+ 188   1        ET0 = 1;
+ 189   1      }
+ 190          //******************¶¨Ê±Æ÷0ÖÐ¶Ïº¯Êý*******************************
+ 191          void timer0lntProc(void) interrupt 1
+ 192          {
+ 193   1        unsigned int crcData,recCRC=0;
+ 194   1        unsigned char len;
+ 195   1          if((receBuf[0]==localAddr)&&(receBuf[1]==0x04)&&(receCount==8)) //Îª±¾»úµØÖ·²¢ÇÒÎª04ºÅÃüÁî²¢ÇÒ½ÓÊÕµ½8×Ö½
+             -ÚÊý¾Ý
+ 196   1          { 
+ 197   2            len=receCount-2;
+ 198   2            crcData=crc16(receBuf,len);
+ 199   2            recCRC=recCRC+receBuf[len];
+ 200   2            recCRC=(recCRC<<8)+receBuf[len+1];
+ 201   2            if(crcData==recCRC)
+ 202   2            {
+ 203   3              watchdog = 0;     //Èí¼þ¿´ÃÅ¹·ÇåÁã
+ 204   3              read_Registers();
+ 205   3            }
+ 206   2          }
+ 207   1        TR0=0;
+ 208   1        TL0=0x98;
+ 209   1        TH0=0xE0;
+ 210   1        receCount=0;                              
+ 211   1      }
+ 212          //******************Ö÷º¯Êý*****************************************
+ 213          void main(void)
+ 214          {
+ 215   1        UART1INT();
+ 216   1        TIM0INT();
+ 217   1        EA = 1;
+ 218   1        direction_485 = 0;    //½ÓÊÕ·½Ïò
+ 219   1        while(1)
+ 220   1        {
+ 221   2          watchdog++;
+ 222   2          if(watchdog > 10000)
+ 223   2          {
+ 224   3            watchdog=0;
+ 225   3            UART1INT();
+ 226   3            TIM0INT();
+ 227   3            direction_485 = 0;//½ÓÊÕ·½Ïò
+ 228   3            EA=1;
+ 229   3          }
+ 230   2        }
+ 231   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    596    ----
+   CONSTANT SIZE    =    512    ----
+   XDATA SIZE       =     88    ----
+C51 COMPILER V9.54   CONGJI                                                                04/10/2018 21:25:17 PAGE 5   
+
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      6      16
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
