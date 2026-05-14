@@ -1,0 +1,24 @@
+<?xml version='1.0' standalone='yes' ?>
+<LVData xmlns="http://www.ni.com/LVData">
+<Version>23.1f276</Version>
+<Cluster>
+<Name>Parameter In</Name>
+<NumElts>2</NumElts>
+<Cluster>
+<Name>User Information</Name>
+<NumElts>2</NumElts>
+<String>
+<Name>ÓÃ»§Ãû£º</Name>
+<Val>ccc</Val>
+</String>
+<String>
+<Name>ÃÜ   Âë£º</Name>
+<Val>20051209</Val>
+</String>
+</Cluster>
+<Boolean>
+<Name>Login£¿</Name>
+<Val>1</Val>
+</Boolean>
+</Cluster>
+</LVData>
